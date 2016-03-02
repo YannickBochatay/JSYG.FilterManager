@@ -26,29 +26,46 @@
             return this.getRootElmt().find(matches[2]);
         },
         
+        setFilterElmt : function(selector) {
+            
+            var filterElmt = new JSYG(selector);
+            var id = filterElmt.attr("id");
+            
+            if (!id) {
+                id = "filter"+(+new Date)+JSYG.rand(0,99999999);
+                filterElmt.attr("id",id);
+            }
+          
+            if (this.node) new JSYG(this.node).css("filter","url(#"+id+")");
+            
+            return this;
+        },
+        
         getRootElmt : function() {
             
             return new JSYG(this.node.nearestViewportElement);
         },
                
-        _create : function() {
+        create : function() {
             
             var root = this.getRootElmt(),
             defs = root.find('defs'),
-            id = "filter"+(+new Date)+JSYG.rand(0,99999999);
+            filterElmt = new JSYG("<filter>");
 
             if (!defs.length) defs = new JSYG('<defs>').prependTo(root);
             
-            new JSYG(this.node).css("filter","url(#"+id+")");
-
-            return new JSYG("<filter>").attr("id",id).appendTo(defs);
+            filterElmt.appendTo(defs);
+            
+            this.setFilterElmt(filterElmt);
+            
+            return filterElmt;
         },
         
-        _clone : function() {
+        clone : function() {
           
             var oldFilter = this.getFilterElmt();
             
-            var newFilter = this._create();
+            var newFilter = this.create();
             
             oldFilter.children().each(function() {
                 newFilter.append( new JSYG(this).clone() );
@@ -67,12 +84,12 @@
                 others = this._findOthers(_exclude);
                                 
                 if (others.length) {
-                    this._clone();
+                    this.clone();
                     this.set(type,attrs);
                     return this;
                 }
             }
-            else parent = this._create();
+            else parent = this.create();
                 
             filter = parent.find(type);
                 
@@ -100,7 +117,7 @@
             else {
             
                 if (others.length) {
-                    this._clone();
+                    this.clone();
                     this.remove(type);
                 }
                 else {
@@ -125,7 +142,7 @@
                 filterElmt = this.getFilterElmt(),
                 id = filterElmt.attr("id");
             
-            return root.find("*[filter='url("+id+")']").not(exclude || this.elmt);
+            return root.find("*[filter='url(#"+id+")']").not(exclude || this.node);
         }
     };
     
@@ -135,28 +152,32 @@
         
         var name = "filterEffect";
         var collection = this;
+        var commonFilter;
         
-        var haveFilterAttr = JSYG.makeArray(this).some(function(item) {
+        JSYG.makeArray(this).some(function(item) {
+            
             var filter = new JSYG(item).css("filter");
-            return filter && filter != "none";
+            var fm;
+            
+            if (!filter || filter == "none") {
+                
+                fm = new FilterManager(item);
+                
+                if (!commonFilter) commonFilter = fm.create();
+                else fm.setFilterElmt(commonFilter);
+            }
         });
                         
         return this.each(function(i) {
                 
             var $this = new JSYG(this),
-            filterManager = $this.data(name),
-            commonFilter;
+            filterManager = $this.data(name);
 
             if (!filterManager) {
                 filterManager = new FilterManager(this);
                 $this.data(name,filterManager);
             }
-            
-            if (!haveFilterAttr) {
-                if (!commonFilter) commonFilter = filterManager._create().attr("id");
-                else $this.css("filter","url(#"+commonFilter+")");
-            }
-                        
+                                    
             if (attrs === null) filterManager.remove(type,collection);
             else if (type === null) filterManager.remove(null,collection);
             else filterManager.set(type,attrs,collection);
