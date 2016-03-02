@@ -21,7 +21,7 @@
             regUrl = /url\((['"]?)(#\w+)\1\)/,
             matches = urlFilter && regUrl.exec(urlFilter);
         
-            if (!urlFilter || !matches) return null;
+            if (!urlFilter || !matches) return new JSYG();
             
             return this.getRootElmt().find(matches[2]);
         },
@@ -203,23 +203,27 @@
         
         var name = "filterEffect";
         var collection = this;
+        var returnValue = this;
         var commonFilter;
         
-        JSYG.makeArray(this).some(function(item) {
-            
-            var filter = new JSYG(item).css("filter");
-            var fm;
-            
-            if (!filter || filter == "none") {
-                
-                fm = new FilterManager(item);
-                
-                if (!commonFilter) commonFilter = fm.create();
-                else fm.setFilterElmt(commonFilter);
-            }
-        });
+        if (attrs!==undefined) {
+        
+            JSYG.makeArray(this).some(function(item) {
+
+                var filter = new JSYG(item).css("filter");
+                var fm;
+
+                if (!filter || filter == "none") {
+
+                    fm = new FilterManager(item);
+
+                    if (!commonFilter) commonFilter = fm.create();
+                    else fm.setFilterElmt(commonFilter);
+                }
+            });
+        }
                         
-        return this.each(function(i) {
+        this.each(function(i) {
                 
             var $this = new JSYG(this),
             filterManager = $this.data(name);
@@ -228,16 +232,24 @@
                 filterManager = new FilterManager(this);
                 $this.data(name,filterManager);
             }
-                                    
+            
+            if (attrs === undefined) {
+                returnValue = filterManager.getFilterElmt().find(type);
+                return false;
+            }
+            
             if (attrs === null) filterManager.remove(type,collection);
             else if (type === null) filterManager.remove(null,collection);
-            else filterManager.set(type,attrs,collection);
-
-            return null;
+            else if (JSYG.isPlainObject(attrs)) filterManager.set(type,attrs,collection);
+            else if (attrs == "") filterManager.set(type,attrs,collection);
         });
+        
+        return returnValue;
     };
     
     JSYG.prototype.gaussianBlur = function(stdDeviation) {
+        
+        if (stdDeviation === undefined) return this.filterEffect("feGaussianBlur").attr("stdDeviation") || 0;
         
         var opt = (stdDeviation == 0) ? null : { in:"SourceGraphic", stdDeviation:stdDeviation };
       
@@ -246,12 +258,16 @@
     
     JSYG.prototype.saturate = function(value) {
         
+        if (value === undefined) return this.filterEffect("feColorMatrix").filter("[type=saturate]").attr("values") || 1;
+        
         var opt = (value == 1) ? null : { type:"saturate", values:value };
       
         return this.filterEffect("feColorMatrix",opt);
     };
     
     JSYG.prototype.hueRotate = function(value) {
+        
+        if (value === undefined) return this.filterEffect("feColorMatrix").filter("[type=hueRotate]").attr("values") || 0;
         
         var opt = (value == 0) ? null : { type:"hueRotate", values:value };
       
