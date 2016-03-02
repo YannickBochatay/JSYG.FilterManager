@@ -6,12 +6,60 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
     <body>
-        <svg width="100%" height="800">
+        <svg width="100%" height="400">
+            <image x="0" y="0" width="200" height="113" xlink:href="soleil.jpg"/>
             <rect x="100" y="100" width="100" height="80"/>
             <circle cx="300" cy="300" r="80" fill="pink"/>
         </svg>
+        <form>
+
+            Apply on
+
+            <label>
+                <input type="checkbox" name="image" checked="checked" autocomplete="off"/> image
+            </label>
+
+            <label>
+                <input type="checkbox" name="rect" checked="checked" autocomplete="off"/> rect
+            </label>
+
+            <label>
+                <input type="checkbox" name="circle" checked="checked" autocomplete="off"/> circle
+            </label>
+
+            <br/>
+
+            Blur<input type="range" min="0" max="50" step="0.5" name="gaussianBlur" value="0" autocomplete="off"/>
+
+            <br/>
+
+            HueRotate<input type="range" min="0" max="360" step="1" name="hueRotate" value="1" autocomplete="off"/>
+        </form>
         <script src="bower_components/jquery/dist/jquery.js"></script>
         <script src="bower_components/jsyg/JSYG.js"></script>
         <script src="JSYG.FilterManager.js"></script>
+        <script>
+
+            function findShapes() {
+
+                return ["rect","circle","image"].reduce(function(collection,name) {
+
+                    var elmt = new JSYG("[name="+name+"]");
+
+                    return elmt.prop("checked") ? collection.add('svg '+name) : collection;
+
+                },new JSYG());
+            }
+
+            ["gaussianBlur","hueRotate"].forEach(function(prop) {
+
+                new JSYG("[name="+prop+"]").on("input",function() {
+                    findShapes()[prop](this.value);
+                });
+
+            });
+
+
+        </script>
     </body>
 </html>

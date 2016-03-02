@@ -26,13 +26,18 @@
             return this.getRootElmt().find(matches[2]);
         },
         
+        _generateUid : function() {
+          
+            return (+new Date)+JSYG.rand(0,99999999);
+        },
+        
         setFilterElmt : function(selector) {
             
             var filterElmt = new JSYG(selector);
             var id = filterElmt.attr("id");
             
             if (!id) {
-                id = "filter"+(+new Date)+JSYG.rand(0,99999999);
+                id = "filter"+this._generateUid();
                 filterElmt.attr("id",id);
             }
           
@@ -74,12 +79,58 @@
             return newFilter;
         },
         
+        _getFilters : function() {
+            
+            return this.getFilterElmt().children().not("feMerge,feBlend,feComposite,feImage,feTile");
+        },
+        
+        add : function(type) {
+                      
+            var filter = new JSYG('<'+type+'>');
+            
+            var filters = this._getFilters();
+            
+            var lastFilter = filters.eq(-1);
+            
+            if (lastFilter.length) {
+                
+                filter.attr("in", lastFilter.attr("result") );
+            }
+            
+            filter.attr("result", "blend"+this._generateUid());
+            
+            this.getFilterElmt().append(filter);
+            
+            //this._setBlend();
+            
+            return filter;
+        },
+        /*
+        _setBlend : function() {
+            
+            var filterParent = this.getFilterElmt();
+            
+            var filters = this._getFilters();
+            
+            var blend = filterParent.find("feBlend");
+            
+            if (blend && filters.length < 2) blend.remove();
+            else {
+            
+                if (!blend.length) blend = new JSYG("<feBlend>").attr("in","SourceGraphic").appendTo(filterParent);
+            
+                blend.attr("in2", filters.eq(-1).attr("result") );
+            }
+            
+            return this;
+        },
+        */
         set : function(type,attrs,_exclude) {
             
-            var parent = this.getFilterElmt();
+            var filterParent = this.getFilterElmt();
             var filter, others;
             
-            if (parent) {
+            if (filterParent) {
                 
                 others = this._findOthers(_exclude);
                                 
@@ -89,11 +140,11 @@
                     return this;
                 }
             }
-            else parent = this.create();
+            else filterParent = this.create();
                 
-            filter = parent.find(type);
+            filter = filterParent.find(type);
                 
-            if (!filter.length) filter = new JSYG('<'+type+'>').appendTo(parent);
+            if (!filter.length) filter = this.add(type);
             
             filter.attr(attrs);
             
@@ -102,17 +153,15 @@
                 
         remove : function(type,_exclude) {
           
-            var parent = this.getFilterElmt();
+            var filterParent = this.getFilterElmt();
             var others;
-            
-            if (!parent.length) return;
-            
+                        
             others = this._findOthers(_exclude);
             
             if (!type) {
                 
                 if (others.length) new JSYG(this.node).css("filter","");
-                else parent.remove();
+                else filterParent.remove();
             }
             else {
             
@@ -122,11 +171,13 @@
                 }
                 else {
                     
-                    parent.find(type).remove();
+                    filterParent.find(type).remove();
                     
-                    if (!parent.children().length) {
+                    //this._setBlend();
+                    
+                    if (!filterParent.children().length) {
                         new JSYG(this.node).css("filter","");
-                        parent.remove();
+                        filterParent.remove();
                     }
                     
                 }
@@ -188,9 +239,23 @@
     
     JSYG.prototype.gaussianBlur = function(stdDeviation) {
         
-        var opt = (stdDeviation == 0) ? null : { in:"SourceGraphic", stdDeviation:stdDeviation || "0" };
+        var opt = (stdDeviation == 0) ? null : { in:"SourceGraphic", stdDeviation:stdDeviation };
       
         return this.filterEffect("feGaussianBlur",opt);
+    };
+    
+    JSYG.prototype.saturate = function(value) {
+        
+        var opt = (value == 1) ? null : { type:"saturate", values:value };
+      
+        return this.filterEffect("feColorMatrix",opt);
+    };
+    
+    JSYG.prototype.hueRotate = function(value) {
+        
+        var opt = (value == 0) ? null : { type:"hueRotate", values:value };
+      
+        return this.filterEffect("feColorMatrix",opt);
     };
     
     return FilterManager;
